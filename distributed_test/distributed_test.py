@@ -116,7 +116,7 @@ def main(_):
                     train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
                     print('step %d, training accuracy %g' % (counter, train_accuracy))
 
-                sess.run([train_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5},session=sess)
+                sess.run([train_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
                 counter += 1
             print('Training complete\n')
 
