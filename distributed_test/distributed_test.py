@@ -95,7 +95,7 @@ def main(_):
         else:
             is_chief = False
             logs_dir = None
-        sync_replicas_hook = opt.make_session_run_hoo(is_chief)
+        sync_replicas_hook = opt.make_session_run_hook(is_chief)
         train_step = opt.minimize(cross_entropy, global_step)
 
         correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
