@@ -91,10 +91,8 @@ def main(_):
             is_chief = True
         elif args.task_index == 0:
             is_chief = True
-            logs_dir = '/home/ubuntu/project/cs744_project_d3/distributed_test/logs_distributed_test'
         else:
             is_chief = False
-            logs_dir = '/home/ubuntu/project/cs744_project_d3/distributed_test/logs_distributed_test'
         sync_replicas_hook = opt.make_session_run_hook(is_chief)
         train_step = opt.minimize(cross_entropy, global_step)
 
@@ -107,7 +105,7 @@ def main(_):
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
         
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=logs_dir,hooks=hooks) as sess:
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=None,hooks=hooks) as sess:
             counter = 0
             while not sess.should_stop():
                 batch = mnist.train.next_batch(50)
