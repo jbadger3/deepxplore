@@ -94,7 +94,7 @@ def main(_):
             logs_dir = '/home/ubuntu/project/cs744_project_d3/distributed_test/logs_distributed_test'
         else:
             is_chief = False
-            logs_dir = None
+            logs_dir = '/home/ubuntu/project/cs744_project_d3/distributed_test/logs_distributed_test'
         sync_replicas_hook = opt.make_session_run_hook(is_chief)
         train_step = opt.minimize(cross_entropy, global_step)
 
