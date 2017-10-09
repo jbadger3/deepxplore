@@ -62,7 +62,7 @@ def main(_):
             b_fc2 = bias_variable([10])
 
 
-        with tf.device("/job:{}/task:{}".format(worker_job_name,args.task_index)):
+        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}".format(worker_job_name,args.task_index),cluster=cluster)):
 
             #create layers using weights from above
             h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
