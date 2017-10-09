@@ -30,7 +30,7 @@ def cluster_spec_dict(should_run_local):
         return {'local':['localhost:2222','localhost:2223']}
     else:
     #host parameter server on VM-3-1 and works on VM-3-2 to VM-3-5
-        return {'ps':['10.254.0.36:2226'],'worker':['10.254.0.32:2222', '10.254.0.33:2223','10.254.0.34:2224','10.254.0.35:2225']}
+        return {'ps':['10.254.0.36:2222'],'worker':['10.254.0.32:2222', '10.254.0.33:2222','10.254.0.34:2222','10.254.0.35:2222']}
 
 def main(_):
 
@@ -83,15 +83,10 @@ def main(_):
         cross_entropy = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
         global_step = tf.train.get_or_create_global_step()
-        train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy,global_step=global_step)
-        correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
-        tf.summary.merge_all()
-        hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
-        # The MonitoredTrainingSession takes care of session initialization,
-        # restoring from a checkpoint, saving to a checkpoint, and closing when done
-        # or an error occurs.
+        adam_opt = tf.train.AdamOptimizer(1e-4)
+        #add op to collect replicas and sync shared parameters
+        opt = tf.train.SyncReplicasOptimizer(adam_opt, replicas_to_aggregate=4,total_num_replicas=4)
+
         if args.job_name == 'local':
             is_chief = True
         elif args.task_index == 0:
@@ -100,6 +95,18 @@ def main(_):
         else:
             is_chief = False
             logs_dir = None
+        sync_replicas_hook = opt.make_session_run_hoo(is_chief)
+        train_step = opt.minimize(cross_entropy, global_step)
+
+        correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
+        tf.summary.merge_all()
+        hooks=[sync_replicas_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
+        # The MonitoredTrainingSession takes care of session initialization,
+        # restoring from a checkpoint, saving to a checkpoint, and closing when done
+        # or an error occurs.
+        
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=logs_dir,hooks=hooks) as sess:
             counter = 0
             while not sess.should_stop():
