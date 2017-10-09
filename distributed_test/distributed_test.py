@@ -35,7 +35,7 @@ def cluster_spec_dict(should_run_local):
 def main(_):
 
     # Create a cluster from the parameter server and worker hosts.
-    cluster = tf.train.ClusterSpec(cluster_spec_dict(cluster))
+    cluster = tf.train.ClusterSpec(cluster_spec_dict(args.run_local))
 
     # Create and start a server for the local task.
     server = tf.train.Server(cluster,
@@ -128,5 +128,4 @@ if __name__ == "__main__":
     parser.add_argument("--run_local",type=bool,default=False,help="Pass one of yes, true, t, y, or 1 to run on a single machine.")
     args, unparsed = parser.parse_known_args()
     mnist = input_data.read_data_sets('/home/ubuntu/project/cs744_project_d3/MNIST_data', one_hot=True)
-    cluster = cluster_spec_dict(args.run_local)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
