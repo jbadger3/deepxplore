@@ -49,7 +49,7 @@ def main(_):
         x = tf.placeholder(tf.float32, shape=[None, 784])
         x_image = tf.reshape(x, [-1, 28, 28, 1])
         y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        with tf.device("/job:ps/task:0".format(param_job_name)):
+        with tf.device("/job:{}/task:{}".format(args.job_name,args.task_index)):
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
@@ -60,9 +60,8 @@ def main(_):
             b_fc1 = bias_variable([1024])
             W_fc2 = weight_variable([1024, 10])
             b_fc2 = bias_variable([10])
+            global_step = tf.train.get_or_create_global_step()
 
-
-        with tf.device("/job:{}/task:{}".format(worker_job_name,args.task_index)):
 
             #create layers using weights from above
             h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
@@ -82,7 +81,6 @@ def main(_):
 
         cross_entropy = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
-        global_step = tf.train.get_or_create_global_step()
         adam_opt = tf.train.AdamOptimizer(1e-4)
         #add op to collect replicas and sync shared parameters
         opt = tf.train.SyncReplicasOptimizer(adam_opt, replicas_to_aggregate=4,total_num_replicas=4)
@@ -129,12 +127,6 @@ if __name__ == "__main__":
     parser.add_argument("--task_index",type=int,default=0,help="Index of task within the job")
     parser.add_argument("--run_local",type=bool,default=False,help="Pass one of yes, true, t, y, or 1 to run on a single machine.")
     args, unparsed = parser.parse_known_args()
-    if args.job_name == 'local':
-        param_job_name = 'local'
-        worker_job_name = 'local'
-    else:
-        param_job_name = 'ps'
-        worker_job_name = 'worker'
     with open('/home/ubuntu/project/cs744_project_d3/distributed_test/temp.txt','w') as fh:
         fh.write('job name: {}\ntask indes: {}\n'.format(worker_job_name, args.task_index))
     mnist = input_data.read_data_sets('/home/ubuntu/project/cs744_project_d3/MNIST_data', one_hot=True)
