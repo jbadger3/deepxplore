@@ -91,7 +91,7 @@ def main(_):
             is_chief = True
         elif args.task_index == 0:
             is_chief = True
-            logs_dir = 'logs_distributed_test'
+            logs_dir = '/home/ubuntu/project/cs744_project_d3/distributed_test/logs_distributed_test'
         else:
             is_chief = False
             logs_dir = None
