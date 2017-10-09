@@ -35,7 +35,7 @@ def cluster_spec_dict(should_run_local):
 def main(_):
 
     # Create a cluster from the parameter server and worker hosts.
-    cluster = tf.train.ClusterSpec(cluster_spec_dict(args.run_local))
+    cluster = tf.train.ClusterSpec(cluster_spec_dict(cluster))
 
     # Create and start a server for the local task.
     server = tf.train.Server(cluster,
@@ -49,7 +49,7 @@ def main(_):
         x = tf.placeholder(tf.float32, shape=[None, 784])
         x_image = tf.reshape(x, [-1, 28, 28, 1])
         y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}:cpu:0".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0"),cluster=cluster_spec_dict()):
+        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}:cpu:0".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0",cluster=cluster)):
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
@@ -128,4 +128,5 @@ if __name__ == "__main__":
     parser.add_argument("--run_local",type=bool,default=False,help="Pass one of yes, true, t, y, or 1 to run on a single machine.")
     args, unparsed = parser.parse_known_args()
     mnist = input_data.read_data_sets('/home/ubuntu/project/cs744_project_d3/MNIST_data', one_hot=True)
+    cluster = cluster_spec_dict(args.run_local)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
