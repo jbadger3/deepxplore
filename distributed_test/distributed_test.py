@@ -49,7 +49,7 @@ def main(_):
         x = tf.placeholder(tf.float32, shape=[None, 784])
         x_image = tf.reshape(x, [-1, 28, 28, 1])
         y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        with tf.device("/job:{}/task:{}".format(args.job_name,args.task_index)):
+        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}:cpu:0".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0")):
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
@@ -127,7 +127,5 @@ if __name__ == "__main__":
     parser.add_argument("--task_index",type=int,default=0,help="Index of task within the job")
     parser.add_argument("--run_local",type=bool,default=False,help="Pass one of yes, true, t, y, or 1 to run on a single machine.")
     args, unparsed = parser.parse_known_args()
-    with open('/home/ubuntu/project/cs744_project_d3/distributed_test/temp.txt','w') as fh:
-        fh.write('job name: {}\ntask indes: {}\n'.format(worker_job_name, args.task_index))
     mnist = input_data.read_data_sets('/home/ubuntu/project/cs744_project_d3/MNIST_data', one_hot=True)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
