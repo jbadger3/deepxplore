@@ -49,7 +49,7 @@ def main(_):
         x = tf.placeholder(tf.float32, shape=[None, 784])
         x_image = tf.reshape(x, [-1, 28, 28, 1])
         y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        with tf.device("/job:{}/task:0".format(param_job_name)):
+        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:0".format(param_job_name))):
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
@@ -62,7 +62,7 @@ def main(_):
             b_fc2 = bias_variable([10])
 
 
-        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}".format(worker_job_name,args.task_index))):
+        with tf.device("/job:{}/task:{}".format(worker_job_name,args.task_index)):
 
             #create layers using weights from above
             h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
