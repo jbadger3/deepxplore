@@ -96,7 +96,7 @@ def main(_):
             is_chief = True
         elif args.task_index == 0:
             is_chief = True
-            logs_dir = None
+            logs_dir = 'logs_distributed_test'
         else:
             is_chief = False
             logs_dir = None
