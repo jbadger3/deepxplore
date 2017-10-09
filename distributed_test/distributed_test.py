@@ -129,7 +129,7 @@ if __name__ == "__main__":
     else:
         param_job_name = 'ps'
         worker_job_name = 'worker'
-    with open('temp.txt','w') as fh:
-        fh.write('job name: {}\ntask indes: {}'.format(worker_job_name, args.task_index))
+    with open('/home/ubuntu/project/cs744_project_d3/temp.txt','w') as fh:
+        fh.write('job name: {}\ntask indes: {}\n'.format(worker_job_name, args.task_index))
     mnist = input_data.read_data_sets('/home/ubuntu/project/cs744_project_d3/MNIST_data', one_hot=True)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
