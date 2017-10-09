@@ -49,7 +49,7 @@ def main(_):
         x = tf.placeholder(tf.float32, shape=[None, 784])
         x_image = tf.reshape(x, [-1, 28, 28, 1])
         y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}:cpu:0".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0")):
+        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}:cpu:0".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0"),cluster=cluster_spec_dict()):
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
