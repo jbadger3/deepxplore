@@ -130,6 +130,6 @@ if __name__ == "__main__":
         param_job_name = 'ps'
         worker_job_name = 'worker'
     with open('temp.txt','w') as fh:
-        fh.write('job name: {}\ntask indes: {}'.format(worker_job_name, args.task_index)
+        fh.write('job name: {}\ntask indes: {}'.format(worker_job_name, args.task_index))
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
