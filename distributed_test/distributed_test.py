@@ -79,25 +79,25 @@ def main(_):
             global_step = tf.train.get_or_create_global_step()
             train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy,global_step=global_step)
 
-        cross_entropy = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
-        adam_opt = tf.train.AdamOptimizer(1e-4)
+            cross_entropy = tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
+            adam_opt = tf.train.AdamOptimizer(1e-4)
         #add op to collect replicas and sync shared parameters
-        opt = tf.train.SyncReplicasOptimizer(adam_opt, replicas_to_aggregate=4,total_num_replicas=4)
+            opt = tf.train.SyncReplicasOptimizer(adam_opt, replicas_to_aggregate=4,total_num_replicas=4)
 
-        if args.job_name == 'local':
-            is_chief = True
-        elif args.task_index == 0:
-            is_chief = True
-        else:
-            is_chief = False
-        sync_replicas_hook = opt.make_session_run_hook(is_chief)
-        train_step = opt.minimize(cross_entropy, global_step)
+            if args.job_name == 'local':
+                is_chief = True
+            elif args.task_index == 0:
+                is_chief = True
+            else:
+                is_chief = False
+            sync_replicas_hook = opt.make_session_run_hook(is_chief)
+            train_step = opt.minimize(cross_entropy, global_step)
 
-        correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
-        tf.summary.merge_all()
+            correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
+            tf.summary.merge_all()
         hooks=[sync_replicas_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
