@@ -30,7 +30,7 @@ def cluster_spec_dict(should_run_local):
         return {'local':['localhost:2222','localhost:2223']}
     else:
     #host parameter server on VM-3-1 and works on VM-3-2 to VM-3-5
-        return {'ps':['10.254.0.36:2222'],'worker':['10.254.0.32:2223', '10.254.0.33:2224','10.254.0.34:2225','10.254.0.35:2226']}
+        return {'ps':['10.254.0.36:2222'],'worker':['10.254.0.32:2222', '10.254.0.33:2222','10.254.0.34:2222','10.254.0.35:2222']}
 
 def main(_):
 
