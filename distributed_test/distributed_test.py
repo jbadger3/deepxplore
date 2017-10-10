@@ -49,7 +49,7 @@ def main(_):
         x = tf.placeholder(tf.float32, shape=[None, 784])
         x_image = tf.reshape(x, [-1, 28, 28, 1])
         y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}/:cpu:0".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0",cluster=cluster)):
+        with tf.device(tf.train.replica_device_setter(worker_device="/job:{}/task:{}".format(args.job_name,args.task_index),ps_device="job:ps/cpu:0",cluster=cluster)):
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
@@ -90,6 +90,7 @@ def main(_):
                 is_chief = True
             else:
                 is_chief = False
+            print('is_cheif {}'.format(is_cheif))
             train_step = adam_opt.minimize(cross_entropy, global_step)
 
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
