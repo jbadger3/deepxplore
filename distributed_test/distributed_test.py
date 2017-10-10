@@ -90,7 +90,7 @@ def main(_):
                 is_chief = True
             else:
                 is_chief = False
-            print('is_cheif {}'.format(is_cheif))
+            print('is_chief {}'.format(is_chief))
             train_step = adam_opt.minimize(cross_entropy, global_step)
 
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
