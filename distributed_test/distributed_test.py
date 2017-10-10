@@ -98,7 +98,7 @@ def main(_):
             tf.summary.merge_all()
         checkpoint_dir = 'logs_distributed_test'
         trainable_vars = tf.trainable_variables()
-        saver = tf.train.Saver(var_list=trainable_variables,sharded=True)
+        saver = tf.train.Saver(var_list=trainable_vars,sharded=True)
         save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,saver=saver,save_steps=500)
         hooks=[save_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
