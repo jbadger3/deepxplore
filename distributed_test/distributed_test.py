@@ -90,7 +90,6 @@ def main(_):
                 is_chief = True
             else:
                 is_chief = False
-            print('is_chief {}'.format(is_chief))
             train_step = adam_opt.minimize(cross_entropy, global_step)
 
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
@@ -101,8 +100,8 @@ def main(_):
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
-
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=None,hooks=hooks) as sess:
+        logs_dir = '/logs_distributed_test'
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=logs_dir,hooks=hooks) as sess:
             counter = 0
             while not sess.should_stop():
                 batch = mnist.train.next_batch(50)
