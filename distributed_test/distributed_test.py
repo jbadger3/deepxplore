@@ -97,7 +97,9 @@ def main(_):
             accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
             tf.summary.merge_all()
         checkpoint_dir = 'logs_distributed_test'
-        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,save_steps=500)
+        trainable_vars = tf.trainable_variables()
+        saver = tf.train.Saver(var_list=trainable_variables,sharded=True)
+        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,saver=saver,save_steps=500)
         hooks=[save_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
