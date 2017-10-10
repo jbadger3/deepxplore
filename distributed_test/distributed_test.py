@@ -83,7 +83,6 @@ def main(_):
             tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
             adam_opt = tf.train.AdamOptimizer(1e-4)
         #add op to collect replicas and sync shared parameters
-            opt = tf.train.SyncReplicasOptimizer(adam_opt, replicas_to_aggregate=4,total_num_replicas=4)
 
             if args.job_name == 'local':
                 is_chief = True
@@ -91,18 +90,17 @@ def main(_):
                 is_chief = True
             else:
                 is_chief = False
-            sync_replicas_hook = opt.make_session_run_hook(is_chief)
-            train_step = opt.minimize(cross_entropy, global_step)
+            train_step = adam_opt.minimize(cross_entropy, global_step)
 
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
             tf.summary.merge_all()
-        hooks=[sync_replicas_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
+        hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
-        
+
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=None,hooks=hooks) as sess:
             counter = 0
             while not sess.should_stop():
