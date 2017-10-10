@@ -96,12 +96,13 @@ def main(_):
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
             tf.summary.merge_all()
-        hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
+        checkpoint_dir = 'logs_distributed_test'
+        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,save_steps=500)
+        hooks=[save_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
-        logs_dir = '/logs_distributed_test'
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,checkpoint_dir=logs_dir,hooks=hooks) as sess:
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,save_summaries_steps=100,hooks=hooks) as sess:
             counter = 0
             while not sess.should_stop():
                 batch = mnist.train.next_batch(50)
