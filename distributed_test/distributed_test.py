@@ -91,15 +91,16 @@ def main(_):
             else:
                 is_chief = False
             train_step = adam_opt.minimize(cross_entropy, global_step)
-
-            correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
-            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
-            tf.summary.merge_all()
+            if is_chief:
+                correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
+        summary_op = tf.summary.merge_all()
+        summary_hook = tf.train.SummarySaverHook(save_steps=100, output_dir='logs_distributed_test', summary_writer=None, summary_op=summary_op)
         checkpoint_dir = 'logs_distributed_test'
         trainable_vars = tf.trainable_variables()
 #        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,save_steps=500)
-        hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
+        hooks=[summary_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
@@ -108,7 +109,7 @@ def main(_):
             while not sess.should_stop():
                 batch = mnist.train.next_batch(50)
 
-                if counter % 100 == 0:
+                if is_chief and counter % 100 == 0:
                     train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
                     print('step %d, training accuracy %g' % (counter, train_accuracy))
 
