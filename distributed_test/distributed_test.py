@@ -46,10 +46,11 @@ def main(_):
         server.join()
     elif args.job_name == "worker" or (args.job_name == "local" and args.task_index == 1):
     # Assigns ops to the local worker by default.
-        x = tf.placeholder(tf.float32, shape=[None, 784])
-        x_image = tf.reshape(x, [-1, 28, 28, 1])
-        y_ = tf.placeholder(tf.float32, shape=[None, 10])
+
         with tf.device(tf.train.replica_device_setter(cluster=cluster)):
+            x = tf.placeholder(tf.float32, shape=[None, 784])
+            x_image = tf.reshape(x, [-1, 28, 28, 1])
+            y_ = tf.placeholder(tf.float32, shape=[None, 10])
             #place all variables on parameter server to share
             #create all trainable variables for the model
             W_conv1 = weight_variable([5, 5, 1, 32])
@@ -91,7 +92,7 @@ def main(_):
             else:
                 is_chief = False
             train_step = adam_opt.minimize(cross_entropy, global_step)
-            
+
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
