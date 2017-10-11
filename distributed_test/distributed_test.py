@@ -114,7 +114,7 @@ def main(_):
         while True:
             batch = mnist.train.next_batch(50)
             _, _global_step = sess.run([train_step, global_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-            if counter % 100 == 0:
+            if _global_step % 100 == 0:
                 train_accuracy, _summary_ops = sess.run([accuracy, summary_ops],feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
                 print('step {}, training accuracy {}' % (counter, train_accuracy))
                 if is_chief:
