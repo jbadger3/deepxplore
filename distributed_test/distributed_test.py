@@ -95,7 +95,7 @@ def main(_):
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
-#        summary_op = tf.summary.merge_all()
+            tf.summary.merge_all()
 #        summary_hook = tf.train.SummarySaverHook(save_steps=100, output_dir='logs_distributed_test', summary_writer=None, summary_op=summary_op)
         checkpoint_dir = 'logs_distributed_test'
         trainable_vars = tf.trainable_variables()
