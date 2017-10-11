@@ -116,7 +116,7 @@ def main(_):
             _, _global_step = sess.run([train_step, global_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
             if _global_step % 100 == 0:
                 train_accuracy, _summary_ops = sess.run([accuracy, summary_ops],feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-                print('step {}, training accuracy {}' % (_global_step, train_accuracy))
+                print('step {}, training accuracy {}'.format(_global_step, train_accuracy))
                 if is_chief:
                     saver.save(sess, 'logs_distributed_test/model.ckpt')
                     summary_writer.add_summary(_summary_ops,_global_step)
