@@ -60,8 +60,9 @@ def make_model(cluster):
         W_fc2 = weight_variable([1024, 10])
         b_fc2 = bias_variable([10])
         y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+        global_step = tf.train.get_or_create_global_step()
 
-        return x, y_,y_conv, keep_prob
+        return x, y_,y_conv, keep_prob, global_step
 ##############################################################################
 
 
@@ -77,8 +78,7 @@ def main(_):
         server.join()
     elif args.job_name == "worker" or (args.job_name == "local" and args.task_index == 1):
         #load module for passed model script
-        x, y_,y_conv, keep_prob = make_model(cluster)
-        global_step = tf.train.get_or_create_global_step()
+        x, y_,y_conv, keep_prob,global_step = make_model(cluster)
         cross_entropy = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
         adam_opt = tf.train.AdamOptimizer(1e-4)
@@ -120,7 +120,7 @@ def main(_):
                 if is_chief:
                     saver.save(sess, 'logs_distributed_test/model.ckpt')
                     summary_writer.add_summary(_summary_ops,_global_step)
-                    
+
             if _global_step > args.num_steps:
                 break
 
