@@ -96,7 +96,7 @@ def main(_):
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
             tf.summary.merge_all()
-        checkpoint_dir = './logs_distributed_test'
+        checkpoint_dir = 'logs_distributed_test'
         trainable_vars = tf.trainable_variables()
 #        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,save_steps=500)
         hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
