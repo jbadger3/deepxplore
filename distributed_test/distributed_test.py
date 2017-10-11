@@ -61,7 +61,6 @@ def main(_):
             b_fc1 = bias_variable([1024])
             W_fc2 = weight_variable([1024, 10])
             b_fc2 = bias_variable([10])
-            global_step = tf.train.get_or_create_global_step()
 
 
             #create layers using weights from above
@@ -91,6 +90,7 @@ def main(_):
                 is_chief = True
             else:
                 is_chief = False
+            global_step = tf.train.get_or_create_global_step()
             train_step = adam_opt.minimize(cross_entropy, global_step)
 
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
@@ -100,23 +100,33 @@ def main(_):
 #        summary_hook = tf.train.SummarySaverHook(save_steps=100, output_dir='logs_distributed_test', summary_writer=None, summary_op=summary_op)
         checkpoint_dir = 'logs_distributed_test'
         trainable_vars = tf.trainable_variables()
-#        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,save_steps=500)
-        hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
-        # The MonitoredTrainingSession takes care of session initialization,
-        # restoring from a checkpoint, saving to a checkpoint, and closing when done
-        # or an error occurs.
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=is_chief,checkpoint_dir=checkpoint_dir,hooks=hooks) as sess:
-            counter = 0
-            while not sess.should_stop():
-                batch = mnist.train.next_batch(50)
+        init_op = tf.global_variables_initializer()
 
-                if counter % 100 == 0 and counter > 0:
-                    train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
-                    print('step %d, training accuracy %g' % (counter, train_accuracy))
+        if is_chief:
+            print("Worker {}: Initializing session...".format(args.task_index))
+            saver = tf.train.Saver()
+        else:
+            print("Worker %d: Waiting for session to be initialized...".format(args.task_index))
+        sv = tf.train.Supervisor(is_chief=is_chief,init_op=init_op,summary_op=None,saver=None,recovery_wait_secs=1,global_step=global_step)
+        sess = sv.prepare_or_wait_for_session(server.target)
+        print("Worker %d: Session initialization complete.".format(args.task_index))
 
-                sess.run([train_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-                counter += 1
-            print('Training complete\n')
+        counter = 0
+        while True:
+            batch = mnist.train.next_batch(50)
+
+            if counter % 100 == 0 and counter > 0:
+                train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
+                print('step %d, training accuracy %g' % (counter, train_accuracy))
+
+            _, _global_step = sess.run([train_step, global_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+            if _global_step % 100 == 0 and is_chief:
+                saver.save(sess, 'logs_distributed_test/model.ckpt')
+
+            if _global_step > args.num_steps:
+                break
+            counter += 1
+        print('Training complete\n')
 
 
 if __name__ == "__main__":
@@ -129,5 +139,5 @@ if __name__ == "__main__":
     parser.add_argument("--task_index",type=int,default=0,help="Index of task within the job")
     parser.add_argument("--run_local",type=bool,default=False,help="Pass one of yes, true, t, y, or 1 to run on a single machine.")
     args, unparsed = parser.parse_known_args()
-    mnist = input_data.read_data_sets('/home/ubuntu/project/cs744_project_d3/MNIST_data', one_hot=True)
+    mnist = input_data.read_data_sets('~/project/cs744_project_d3/MNIST_data', one_hot=True)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
