@@ -115,7 +115,7 @@ def main(_):
             batch = mnist.train.next_batch(50)
             _, _global_step = sess.run([train_step, global_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
             if _global_step % 100 == 0:
-                train_accuracy, _summary_ops = sess.run([accuracy, summary_ops],feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
+                train_accuracy, _summary_ops = sess.run([accuracy, summary_ops],feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
                 print('step {}, training accuracy {}' % (counter, train_accuracy))
                 if is_chief:
                     saver.save(sess, 'logs_distributed_test/model.ckpt')
