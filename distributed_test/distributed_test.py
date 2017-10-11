@@ -30,7 +30,7 @@ def cluster_spec_dict(should_run_local):
         return {'local':['localhost:2222','localhost:2223']}
     else:
     #host parameter server on VM-3-1 and works on VM-3-2 to VM-3-5
-        return {'ps':['10.254.0.36:2222'],'worker':['10.254.0.32:2222', '10.254.0.33:2223','10.254.0.34:2224','10.254.0.35:2225']}
+        return {'ps':['10.254.0.36:2222'],'worker':['10.254.0.32:2221', '10.254.0.33:2223','10.254.0.34:2224','10.254.0.35:2225']}
 
 def main(_):
 
@@ -91,16 +91,16 @@ def main(_):
             else:
                 is_chief = False
             train_step = adam_opt.minimize(cross_entropy, global_step)
-            if is_chief:
-                correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
-                accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-                accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
-        summary_op = tf.summary.merge_all()
-        summary_hook = tf.train.SummarySaverHook(save_steps=100, output_dir='logs_distributed_test', summary_writer=None, summary_op=summary_op)
+            
+            correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
+#        summary_op = tf.summary.merge_all()
+#        summary_hook = tf.train.SummarySaverHook(save_steps=100, output_dir='logs_distributed_test', summary_writer=None, summary_op=summary_op)
         checkpoint_dir = 'logs_distributed_test'
         trainable_vars = tf.trainable_variables()
 #        save_hook=tf.train.CheckpointSaverHook(checkpoint_dir,save_steps=500)
-        hooks=[summary_hook,tf.train.StopAtStepHook(num_steps=args.num_steps)]
+        hooks=[tf.train.StopAtStepHook(num_steps=args.num_steps)]
         # The MonitoredTrainingSession takes care of session initialization,
         # restoring from a checkpoint, saving to a checkpoint, and closing when done
         # or an error occurs.
