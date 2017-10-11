@@ -109,7 +109,7 @@ def main(_):
             while not sess.should_stop():
                 batch = mnist.train.next_batch(50)
 
-                if is_chief and counter % 100 == 0:
+                if counter % 100 == 0 and counter > 0:
                     train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0},session=sess)
                     print('step %d, training accuracy %g' % (counter, train_accuracy))
 
