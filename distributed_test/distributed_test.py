@@ -108,7 +108,7 @@ def main(_):
         print("Worker {}: Session initialization complete.".format(args.task_index))
 
         if is_chief:
-            summary_writer = tf.train.SummaryWriter(checkpoint_dir,sess.graph)
+            summary_writer = tf.summary.FileWriter(checkpoint_dir,sess.graph)
 
 
         while True:
