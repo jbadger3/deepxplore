@@ -24,9 +24,9 @@ def model(x, resnet_size=38, is_training=True):
     '''
 
     # reshape x
-    x = tf.reshape(x, [-1, 28, 28, 1])
     
     with tf.variable_scope('resnet'):
+        x = tf.reshape(x, [-1, 28, 28, 1])
         if resnet_size % 6 != 2:
             raise ValueError('resnet_size must be 6n + 2:', resnet_size)
 
