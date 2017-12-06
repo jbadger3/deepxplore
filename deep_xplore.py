@@ -137,6 +137,8 @@ def main(_):
     step_size = config['step_size']
     lambda1 = tf.constant(config['lambda1'])
     lambda2 = tf.constant(config['lambda2'])
+    clipping = config['clipping']
+    seeds = config['seeds']
 
     #define all computed losses and gradients before initialization of the graph
     non_target_models = set(models.keys())
@@ -145,56 +147,59 @@ def main(_):
     non_target_losses = tf.add_n([models[model]['outputs'] for model in non_target_models])
     obj1_loss = tf.add(non_target_losses,target_model_loss)
 
-        for seed in range(2000):
-            #gen_img = mnist.test.next_batch(args.batch_size)[0]
-            gen_img = mnist.test.next_batch(1)[0]
-            orig_img = gen_img.copy()
+    for seed in range(seeds):
+        #gen_img = mnist.test.next_batch(args.batch_size)[0]
+        gen_img = mnist.test.next_batch(1)[0]
+        orig_img = gen_img.copy()
 
-            neurons_to_cover = []
+        neurons_to_cover = []
+        for model_name,model_dict in models.items():
+            coverage_dict = model_dict['coverage_dict']
+            layer, tensor_index = choose_random_neuron(coverage_dict)
+            neurons_to_cover.append(neuron(layer,tensor_index,gen_img))
+        neuron_sum = tf.add_n(neurons_to_cover)
+        obj2_loss = tf.reduce_mean(tf.add(obj1_loss,tf.multiply(neuron_sum,lambda2)))
+        grads = tf.gradients(obj2_loss,x)[0]
+        with tf.Session() as sess:
+            #load trained weights for all graphs
             for model_name,model_dict in models.items():
-                coverage_dict = model_dict['coverage_dict']
-                layer, tensor_index = choose_random_neuron(coverage_dict)
-                neurons_to_cover.append(neuron(layer,tensor_index,gen_img))
-            neuron_sum = tf.add_n(neurons_to_cover)
-            obj2_loss = tf.reduce_mean(tf.add(obj1_loss,tf.multiply(neuron_sum,lambda2)))
-            grads = tf.gradients(obj2_loss,x)[0]
-            with tf.Session() as sess:
-                #load trained weights for all graphs
-                for model_name,model_dict in models.items():
-                    saver = model_dict['saver']
-                    model_dir = config['models'][model_name]['model_dir']
-                    saver.restore(sess,tf.train.latest_checkpoint(model_dir))
+                saver = model_dict['saver']
+                model_dir = config['models'][model_name]['model_dir']
+                saver.restore(sess,tf.train.latest_checkpoint(model_dir))
 
 
-                predictions, pred_model_labels = model_predictions(models,x, gen_img)
-                if not len(set(predictions)) == 1:
-                    #classification is already different in the networks.
-                    #in original DeepXplore these images are added to the difference inducing list.  We will skip and focus on images created by transformation
-                    continue
-                #shared_label = np.zeros((1,10))
-                #shared_label[(0,predictions[0])] = 1
-                shared_label = predictions[0]
-                #choose a random neuron from each network currently not covered
+            predictions, pred_model_labels = model_predictions(models,x, gen_img)
+            if not len(set(predictions)) == 1:
+                #classification is already different in the networks.
+                #in original DeepXplore these images are added to the difference inducing list.  We will skip and focus on images created by transformation
+                continue
+            #shared_label = np.zeros((1,10))
+            #shared_label[(0,predictions[0])] = 1
+            shared_label = predictions[0]
+            #choose a random neuron from each network currently not covered
 
 
-                #run gradient ascent for 20 steps
-                for step in range(0,20):
-                    gradients = grads.eval(feed_dict={x:gen_img})
-                    if transformation == 'light':
-                        gradients = constrain_light(gradients)
-                    gen_img += gradients*step_size
+            #run gradient ascent for 20 steps
+            for step in range(0,20):
+                gradients = grads.eval(feed_dict={x:gen_img})
+                if transformation == 'light':
+                    gradients = constrain_light(gradients)
+                if transformation == 'contrast':
+                    gradients = constrain_contrast(gradients)
+                gen_img += gradients*step_size
+                if clipping == True:
                     gen_img = np.clip(gen_img,0,1)
-                    predictions, pred_model_labels = model_predictions(models,x,gen_img)
-                    if not len(set(predictions)) == 1:
-                        update_coverage(x,gen_img, models, threshold)
-                        final_gen_img = raw_data_to_image(gen_img)
-                        final_orig_img = raw_data_to_image(orig_img)
-                        new_label = list(set(predictions).difference(set([shared_label])))[]
-                        final_gen_img_name = '{}_seed_{}_label{}_to_{}.png'.format(target_model,seed,shared_label,new_label)
-                        final_orig_img_name = '{}_seed_{}_orig.png'.format(target_model,seed)
-                        imsave(os.path.join(out_dir,final_gen_img_name),final_gen_img)
-                        imsave(os.path.join(out_dir,final_orig_img_name),final_orig_img)
-                        break
+                predictions, pred_model_labels = model_predictions(models,x,gen_img)
+                if not len(set(predictions)) == 1:
+                    update_coverage(x,gen_img, models, threshold)
+                    final_gen_img = raw_data_to_image(gen_img)
+                    final_orig_img = raw_data_to_image(orig_img)
+                    new_label = list(set(predictions).difference(set([shared_label])))[0]
+                    final_gen_img_name = '{}_seed_{}_label_{}_to_{}.png'.format(target_model,seed,shared_label,new_label)
+                    final_orig_img_name = '{}_seed_{}_orig.png'.format(target_model,seed)
+                    imsave(os.path.join(out_dir,final_gen_img_name),final_gen_img)
+                    imsave(os.path.join(out_dir,final_orig_img_name),final_orig_img)
+                    break
 
 
 
@@ -204,13 +209,13 @@ if __name__ == "__main__":
     parser.add_argument("--config_json",type=str,help="json file to use for loading trained models and specifying model parameters.")
     parser.add_argument("--out_dir",type=str,default='xplore_out',help="Name of directory to save DeepXplore model and outputs")
     parser.add_argument("--transformation",type=str,help="Type of transformation to apply. One of 'light', 'TO DO'")
-    parser.add_argument("--seeds",type=int,"Integer number of seed examples.")
-    parser.add_argument("--batch_size",type=int,default=1,"Number of seeds to test at a time. DON'T USE YET!")
+    parser.add_argument("--seeds",type=int,default=2000,help="Integer number of seed examples.")
     args, unparsed = parser.parse_known_args()
     out_dir = args.out_dir
     ensure_dir_exists(out_dir)
-    assert args.models_json, 'You must specify a .json file specifying the models to use for DeepXplore.'
-    with open(args.models_json,'r') as fh:
+    assert args.config_json, 'You must specify a .json file specifying the models to use for DeepXplore.'
+    seeds = args.seeds
+    with open(args.config_json,'r') as fh:
         config = json.load(fh)
 
     current_path = os.path.abspath('.')
