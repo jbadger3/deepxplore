@@ -4,12 +4,12 @@ from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 import resnet_model as rn
 
-MODEL_DIR = './model_dir/resnet'
+MODEL_DIR = './resnet_logs_run_1_b100'
 X_FEATURE = 'x'
 NUM_CLASSES = 10
 INIT_LEARNING_RATE = 0.5
 
-def build_mnist_resnet(inputs, resnet_size=38, is_training=True):
+def model(x, resnet_size=38, is_training=True):
     '''
     Build resnet model for mnist.
 
@@ -23,45 +23,53 @@ def build_mnist_resnet(inputs, resnet_size=38, is_training=True):
     output layer of resnet
     '''
 
-    if resnet_size % 6 != 2:
-        raise ValueError('resnet_size must be 6n + 2:', resnet_size)
-
-    num_blocks = (resnet_size - 2) // 6
+    # reshape x
     
-    # data format required for tensorflow's resnet model
-    data_format = ('channels_first' if tf.test.is_built_with_cuda() else 'channels_last')
+    with tf.variable_scope('resnet'):
+        x = tf.reshape(x, [-1, 28, 28, 1])
+        if resnet_size % 6 != 2:
+            raise ValueError('resnet_size must be 6n + 2:', resnet_size)
 
-    # construct 4 blocks of different width and height dimensions
-    inputs = rn.conv2d_fixed_padding(
-        inputs=inputs, filters=16, kernel_size=3, strides=1,
-        data_format=data_format)
-    inputs = tf.identity(inputs, 'initial_conv')
+        num_blocks = (resnet_size - 2) // 6
 
-    inputs = rn.block_layer(
-        inputs=inputs, filters=16, block_fn=rn.building_block, blocks=num_blocks,
-        strides=1, is_training=is_training, name='block_layer1',
-        data_format=data_format)
-    inputs = rn.block_layer(
-        inputs=inputs, filters=32, block_fn=rn.building_block, blocks=num_blocks,
-        strides=2, is_training=is_training, name='block_layer2',
-        data_format=data_format)
-    inputs = rn.block_layer(
-        inputs=inputs, filters=64, block_fn=rn.building_block, blocks=num_blocks,
-        strides=2, is_training=is_training, name='block_layer3',
-        data_format=data_format)
+        # data format required for tensorflow's resnet model
+        data_format = ('channels_first' if tf.test.is_built_with_cuda() else 'channels_last')
 
-    inputs = rn.batch_norm_relu(inputs, is_training, data_format)
-    inputs = tf.layers.average_pooling2d(
-        inputs=inputs, pool_size=7, strides=1, padding='VALID',
-        data_format=data_format)
-    inputs = tf.identity(inputs, 'final_avg_pool')
-    inputs = tf.reshape(inputs, [-1, 64])
-    inputs = tf.layers.dense(inputs=inputs, units=NUM_CLASSES)
-    inputs = tf.identity(inputs, 'final_dense')
-
-    # each block has multiple units
-    # each unit has a 1-channel layer, multi-channel layer and 1-channel layer
-    return inputs
+        # construct 3 blocks of different width and height dimensions
+        x = rn.conv2d_fixed_padding(
+            inputs=x, filters=16, kernel_size=3, strides=1,
+            data_format=data_format)
+        x = tf.identity(x, 'initial_conv')
+        with tf.variable_scope('block1'):
+            x = rn.block_layer(
+                inputs=x, filters=16, block_fn=rn.building_block, blocks=num_blocks,
+                strides=1, is_training=is_training, name='block_layer1',
+                data_format=data_format)
+            tf.add_to_collection('neurons', x)
+        with tf.variable_scope('block2'):
+            x = rn.block_layer(
+                inputs=x, filters=32, block_fn=rn.building_block, blocks=num_blocks,
+                strides=2, is_training=is_training, name='block_layer2',
+                data_format=data_format)
+            tf.add_to_collection('neurons', x)
+        with tf.variable_scope('block3'):
+            x = rn.block_layer(
+                inputs=x, filters=64, block_fn=rn.building_block, blocks=num_blocks,
+                strides=2, is_training=is_training, name='block_layer3',
+                data_format=data_format)
+            tf.add_to_collection('neurons', x)
+        x = rn.batch_norm_relu(x, is_training, data_format)
+        tf.add_to_collection('neurons', x)
+        x = tf.layers.average_pooling2d(
+            inputs=x, pool_size=7, strides=1, padding='VALID',
+            data_format=data_format)
+        x = tf.identity(x, 'final_avg_pool')
+        tf.add_to_collection('neurons', x)
+        
+        x = tf.reshape(x, [-1, 64])
+        x = tf.layers.dense(inputs=x, units=NUM_CLASSES)
+        x = tf.identity(x, 'final_dense')
+        return x
 
 def resnet_model_fn(features, labels, mode, params):
     '''
@@ -82,7 +90,7 @@ def resnet_model_fn(features, labels, mode, params):
     is_training = mode == tf.estimator.ModeKeys.TRAIN
     
     # build model
-    logits = build_mnist_resnet(x, resnet_size=38, is_training=is_training)
+    logits = model(x, resnet_size=38, is_training=is_training)
 
     # generate predictions
     predictions = {
