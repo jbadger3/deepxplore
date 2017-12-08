@@ -9,7 +9,7 @@ X_FEATURE = 'x'
 NUM_CLASSES = 10
 INIT_LEARNING_RATE = 0.5
 
-def model(x, resnet_size=38, is_training=True):
+def model(x, resnet_size=38, is_training=False):
     '''
     Build resnet model for mnist.
 
