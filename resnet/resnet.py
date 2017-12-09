@@ -24,7 +24,7 @@ def model(x, resnet_size=38, is_training=False):
     '''
 
     # reshape x
-    
+
     with tf.variable_scope('resnet'):
         x = tf.reshape(x, [-1, 28, 28, 1])
         if resnet_size % 6 != 2:
@@ -65,7 +65,7 @@ def model(x, resnet_size=38, is_training=False):
             data_format=data_format)
         x = tf.identity(x, 'final_avg_pool')
         tf.add_to_collection('neurons', x)
-        
+
         x = tf.reshape(x, [-1, 64])
         x = tf.layers.dense(inputs=x, units=NUM_CLASSES,
                             activation=tf.nn.sigmoid, name='softmax_tensor')
@@ -77,7 +77,7 @@ def resnet_model_fn(features, labels, mode, params):
     params
     ------
     params: Currently not utilized. Options are hardcoded
-    
+
     returns
     -------
     spec: EstimatorSpec object
@@ -89,7 +89,7 @@ def resnet_model_fn(features, labels, mode, params):
         x = tf.reshape(x, [-1, 28, 28, 1])
 
     is_training = mode == tf.estimator.ModeKeys.TRAIN
-    
+
     # build model
     logits = model(x, resnet_size=38, is_training=is_training)
 
@@ -103,16 +103,16 @@ def resnet_model_fn(features, labels, mode, params):
         return tf.estimator.EstimatorSpec(
             mode=mode,
             predictions=predictions)
-    
+
     # define loss
     cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
         labels=labels, logits=logits))
 
     tf.identity(cross_entropy, name='cross_entropy')
     tf.summary.scalar('cross_entropy', cross_entropy)
-    
+
     loss = cross_entropy # add other terms for regularization
-    
+
     # define training op
     if mode == tf.estimator.ModeKeys.TRAIN:
         global_step = tf.train.get_or_create_global_step()
@@ -122,14 +122,14 @@ def resnet_model_fn(features, labels, mode, params):
             train_op = optimizer.minimize(loss, global_step=global_step)
     else: # evaluate mode
         train_op = None
-    
+
     accuracy = tf.metrics.accuracy(
         tf.argmax(labels, axis=1), predictions['classes'])
     metrics = {'accuracy': accuracy}
 
     tf.identity(accuracy[1], name='train_accuracy')
     tf.summary.scalar('train_accuracy', accuracy[1])
-    
+
     return tf.estimator.EstimatorSpec(
         mode=mode,
         predictions=predictions,
@@ -140,7 +140,7 @@ def resnet_model_fn(features, labels, mode, params):
 def main():
     # read data
     mnist = input_data.read_data_sets('../data/MNIST_data', one_hot=True)
-    
+
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={X_FEATURE: mnist.train.images},
         y=mnist.train.labels,

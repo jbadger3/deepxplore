@@ -20,10 +20,12 @@ def main(_):
     meta_file = meta_file_at_path(model_dir)
     saver = tf.train.import_meta_graph(meta_file)
     graph = tf.get_default_graph()
-    x = graph.get_tensor_by_name(os.path.join(model_variable_scope,'inputs:0'))
-    y_ = graph.get_tensor_by_name(os.path.join(model_variable_scope,'labels:0'))
-
-    accuracy = graph.get_tensor_by_name(os.path.join(model_variable_scope,'accuracy:0'))
+    x= graph.get_tensor_by_name('inputs:0')
+    #x = graph.get_tensor_by_name(os.path.join(model_variable_scope,'inputs:0'))
+    y_ = graph.get_tensor_by_name('labels:0')
+    #y_ = graph.get_tensor_by_name(os.path.join(model_variable_scope,'labels:0'))
+    accuracy = graph.get_tensor_by_name('accuracy:0')
+    #accuracy = graph.get_tensor_by_name(os.path.join(model_variable_scope,'accuracy:0'))
 
     x_test = mnist.test.images
     y_labels = mnist.test.labels

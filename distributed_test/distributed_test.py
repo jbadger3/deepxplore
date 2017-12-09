@@ -1,7 +1,7 @@
 # Adapted from Google's introduction to distributed tensorflow pulled 10/07/2017
 # URL https://www.tensorflow.org/deploy/distributed
 
-import argparse, sys, os
+import argparse, sys, os, time
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -16,7 +16,7 @@ def cluster_spec_dict(should_run_local):
     #host parameter server on VM-3-1 and works on VM-3-2 to VM-3-5
         return {'ps':['10.254.0.36:2222'],'worker':['10.254.0.32:2221', '10.254.0.33:2223','10.254.0.34:2224','10.254.0.35:2225']}
 
-########## Model specific funtions ##################
+################### Model specific funtions ############################
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
@@ -39,7 +39,6 @@ def make_model(cluster):
         #place all variables on parameter server to share
         #create all trainable variables for the model
 
-        #create layers using weights from above
         W_conv1 = weight_variable([5, 5, 1, 32])
         b_conv1 = bias_variable([32])
         h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
@@ -63,7 +62,7 @@ def make_model(cluster):
         global_step = tf.train.get_or_create_global_step()
 
         return x, y_,y_conv, keep_prob, global_step
-##############################################################################
+###############################################################################
 
 
 def main(_):
@@ -81,6 +80,7 @@ def main(_):
         x, y_,y_conv, keep_prob,global_step = make_model(cluster)
         cross_entropy = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv))
+        loss_summ = tf.summary.scalar('loss',cross_entropy)
         adam_opt = tf.train.AdamOptimizer(1e-4)
         train_step = adam_opt.minimize(cross_entropy, global_step)
 
@@ -89,7 +89,7 @@ def main(_):
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         accuracy_summ = tf.summary.scalar('train_accuracy',accuracy)
         summary_ops = tf.summary.merge_all()
-        checkpoint_dir = 'logs_distributed_test'
+        checkpoint_dir = args.log_dir
         init_op = tf.global_variables_initializer()
         if args.job_name == 'local':
             is_chief = True
@@ -97,6 +97,7 @@ def main(_):
             is_chief = True
         else:
             is_chief = False
+
 
         if is_chief:
             print("Worker {}: Initializing session...".format(args.task_index))
@@ -110,7 +111,7 @@ def main(_):
         if is_chief:
             summary_writer = tf.summary.FileWriter(checkpoint_dir,sess.graph)
 
-
+        start_time = time.time()
         while True:
             batch = mnist.train.next_batch(50)
             _, _global_step = sess.run([train_step, global_step],feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
@@ -123,8 +124,8 @@ def main(_):
 
             if _global_step > args.num_steps:
                 break
-
-        print('Training complete\n')
+        duration = time.time() - start_time
+        print('Training complete\nRun time {} seconds.'.format(duration))
 
 
 if __name__ == "__main__":
@@ -132,7 +133,7 @@ if __name__ == "__main__":
     parser.register("type", "bool", lambda v:  v in ['yes', 'true', 't', 'y', '1'])
     parser.add_argument("--num_steps",type=int,default=20000,help="Number of training steps to run.")
     parser.add_argument("--run_local",type=bool,default=False,help="Pass one of yes, true, t, y, or 1 to run on a single machine.")
-    parser.add_argument("--model_script",type=str,help="Name of script. Script should contain a function make_model(cluster) that takes a cluster and produces a Tensorflow NN")
+    parser.add_argument("--log_dir",type=str,default='logs',help="Name of directory to save logs")
 
     # args for defining the tf.train.Server
     parser.add_argument("--job_name",type=str,default="",help="One of 'ps', 'worker'")

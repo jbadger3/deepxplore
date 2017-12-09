@@ -116,7 +116,20 @@ def update_coverage(x,gen_img, models, threshold):
 def constrain_light(gradients):
     new_grads = np.ones_like(gradients)
     grad_mean = np.mean(gradients)
+    print(grad_mean)
     return grad_mean * new_grads
+def constrain_contrast(gradients,step_size,image_placeholder,orig_img,contrast_op,contrast_factor,last_contrast,momentum):
+    grad_mean = np.mean(gradients)
+    last_contrast = last_contrast - grad_mean*step_size*momentum
+    if last_contrast < 0.0:
+        last_contrast = 0.0
+    if last_contrast > 100:
+        last_contrast = 100
+    new_image = contrast_op.eval(feed_dict={image_placeholder:orig_img.reshape((-1,28,28,1)),contrast_factor:last_contrast})
+    momentum = momentum * 1.25
+    return new_image.reshape((-1,784)), last_contrast,momentum
+
+
 
 
 def model_predictions(models,x, gen_img):
@@ -135,6 +148,14 @@ def main(_):
     target_model = config['target_model']
     threshold = config['threshold']
     transformation = config['transformation']
+
+    if transformation == 'contrast':
+        image_placeholder = tf.placeholder(tf.float32,[None,28,28,1])
+        last_contrast = 1.0
+        momentum = 1.0
+        contrast_factor = tf.placeholder(tf.float32)
+        contrast_op = tf.image.adjust_contrast(image_placeholder,contrast_factor)
+
     step_size = config['step_size']
     lambda1 = tf.constant(config['lambda1'])
     lambda2 = tf.constant(config['lambda2'])
@@ -149,6 +170,7 @@ def main(_):
     obj1_loss = tf.add(non_target_losses,target_model_loss)
 
     for seed in range(seeds):
+        print('Current seed:{}'.format(seed))
         #gen_img = mnist.test.next_batch(args.batch_size)[0]
         gen_img = mnist.test.next_batch(1)[0]
         orig_img = gen_img.copy()
@@ -170,6 +192,7 @@ def main(_):
 
 
             predictions, pred_model_labels = model_predictions(models,x, gen_img)
+            print(predictions)
             if not len(set(predictions)) == 1:
                 #classification is already different in the networks.
                 #in original DeepXplore these images are added to the difference inducing list.  We will skip and focus on images created by transformation
@@ -181,13 +204,15 @@ def main(_):
 
 
             #run gradient ascent for 20 steps
-            for step in range(0,20):
+            for step in range(0,50):
+                print(step)
                 gradients = grads.eval(feed_dict={x:gen_img})
                 if transformation == 'light':
                     gradients = constrain_light(gradients)
                 if transformation == 'contrast':
-                    gradients = constrain_contrast(gradients)
-                gen_img += gradients*step_size
+                    gen_img,last_contrast,momentum = constrain_contrast(gradients,step_size,image_placeholder,orig_img,contrast_op,contrast_factor,last_contrast,momentum)
+                if transformation != 'contrast' or transformation == 'raw_gradient':
+                    gen_img += gradients*step_size
                 if clipping == True:
                     gen_img = np.clip(gen_img,0,1)
                 predictions, pred_model_labels = model_predictions(models,x,gen_img)
@@ -196,11 +221,18 @@ def main(_):
                     final_gen_img = raw_data_to_image(gen_img)
                     final_orig_img = raw_data_to_image(orig_img)
                     new_label = list(set(predictions).difference(set([shared_label])))[0]
-                    final_gen_img_name = '{}_seed_{}_label_{}_to_{}.png'.format(target_model,seed,shared_label,new_label)
+                    final_gen_img_name = '{}_seed_{}_label_{}_to_{}_step_{}.png'.format(target_model,seed,shared_label,new_label,step)
                     final_orig_img_name = '{}_seed_{}_orig.png'.format(target_model,seed)
                     imsave(os.path.join(out_dir,final_gen_img_name),final_gen_img)
                     imsave(os.path.join(out_dir,final_orig_img_name),final_orig_img)
+                    if transformation == 'contrast':
+                        last_contrast = 1.0
+                        momentum = 1.0
                     break
+            if transformation == 'contrast':
+                last_contrast = 1.0
+                momentum = 1.0
+
 
 
 
@@ -210,14 +242,15 @@ if __name__ == "__main__":
     parser.add_argument("--config_json",type=str,help="json file to use for loading trained models and specifying model parameters.")
     parser.add_argument("--out_dir",type=str,default='xplore_out',help="Name of directory to save DeepXplore model and outputs")
 
-
     args, unparsed = parser.parse_known_args()
     out_dir = args.out_dir
     ensure_dir_exists(out_dir)
     assert args.config_json, 'You must specify a .json file specifying the models to use for DeepXplore.'
+
     with open(args.config_json,'r') as fh:
         config = json.load(fh)
 
     current_path = os.path.abspath('.')
-    mnist = input_data.read_data_sets(os.path.join(current_path,'MNIST_data'), one_hot=True)
+    mnist_seed = 3
+    mnist = input_data.read_data_sets(os.path.join(current_path,'MNIST_data'), one_hot=True,seed=3)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
