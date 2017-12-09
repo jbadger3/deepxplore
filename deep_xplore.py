@@ -116,7 +116,6 @@ def update_coverage(x,gen_img, models, threshold):
 def constrain_light(gradients):
     new_grads = np.ones_like(gradients)
     grad_mean = np.mean(gradients)
-    print(grad_mean)
     return grad_mean * new_grads
 def constrain_contrast(gradients,step_size,image_placeholder,orig_img,contrast_op,contrast_factor,last_contrast,momentum):
     grad_mean = np.mean(gradients)
@@ -129,6 +128,12 @@ def constrain_contrast(gradients,step_size,image_placeholder,orig_img,contrast_o
     momentum = momentum * 1.25
     return new_image.reshape((-1,784)), last_contrast,momentum
 
+
+def constrain_blur(gradients,step_size, gen_img):
+    mean_grads =gradients.mean()
+    sigma = 0.3 + np.abs(mean_grads)*step_size
+    new_img = gaussian_filter(gen_img,sigma)
+    return new_img
 
 
 
@@ -211,7 +216,9 @@ def main(_):
                     gradients = constrain_light(gradients)
                 if transformation == 'contrast':
                     gen_img,last_contrast,momentum = constrain_contrast(gradients,step_size,image_placeholder,orig_img,contrast_op,contrast_factor,last_contrast,momentum)
-                if transformation != 'contrast' or transformation == 'raw_gradient':
+                if transformation == 'blur':
+                    gen_img = constrain_blur(gradients,step_size, gen_img)
+                if (transformation != 'contrast' and transformation != 'blur') or transformation == 'raw_gradient':
                     gen_img += gradients*step_size
                 if clipping == True:
                     gen_img = np.clip(gen_img,0,1)
