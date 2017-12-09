@@ -4,12 +4,12 @@ from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 import resnet_model as rn
 
-MODEL_DIR = './resnet_logs_run_1_b100'
+MODEL_DIR = './resnet_logs_run_3_b100'
 X_FEATURE = 'x'
 NUM_CLASSES = 10
 INIT_LEARNING_RATE = 0.5
 
-def model(x, resnet_size=38, is_training=True):
+def model(x, resnet_size=38, is_training=False):
     '''
     Build resnet model for mnist.
 
@@ -67,7 +67,8 @@ def model(x, resnet_size=38, is_training=True):
         tf.add_to_collection('neurons', x)
         
         x = tf.reshape(x, [-1, 64])
-        x = tf.layers.dense(inputs=x, units=NUM_CLASSES)
+        x = tf.layers.dense(inputs=x, units=NUM_CLASSES,
+                            activation=tf.nn.sigmoid, name='softmax_tensor')
         x = tf.identity(x, 'final_dense')
         return x
 
@@ -95,7 +96,7 @@ def resnet_model_fn(features, labels, mode, params):
     # generate predictions
     predictions = {
         'classes': tf.argmax(logits, axis=1),
-        'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+        'probabilities': logits
     }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -104,8 +105,8 @@ def resnet_model_fn(features, labels, mode, params):
             predictions=predictions)
     
     # define loss
-    cross_entropy = tf.losses.softmax_cross_entropy(
-        logits=logits, onehot_labels=labels)
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+        labels=labels, logits=logits))
 
     tf.identity(cross_entropy, name='cross_entropy')
     tf.summary.scalar('cross_entropy', cross_entropy)
