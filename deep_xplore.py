@@ -9,6 +9,7 @@ from collections import OrderedDict
 
 import numpy as np
 from scipy.misc import imsave
+from scipy.ndimage.filters import gaussian_filter
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
@@ -208,13 +209,12 @@ if __name__ == "__main__":
     parser.register("type", "bool", lambda v:  v in ['yes', 'true', 't', 'y', '1'])
     parser.add_argument("--config_json",type=str,help="json file to use for loading trained models and specifying model parameters.")
     parser.add_argument("--out_dir",type=str,default='xplore_out',help="Name of directory to save DeepXplore model and outputs")
-    parser.add_argument("--transformation",type=str,help="Type of transformation to apply. One of 'light', 'TO DO'")
-    parser.add_argument("--seeds",type=int,default=2000,help="Integer number of seed examples.")
+
+
     args, unparsed = parser.parse_known_args()
     out_dir = args.out_dir
     ensure_dir_exists(out_dir)
     assert args.config_json, 'You must specify a .json file specifying the models to use for DeepXplore.'
-    seeds = args.seeds
     with open(args.config_json,'r') as fh:
         config = json.load(fh)
 
