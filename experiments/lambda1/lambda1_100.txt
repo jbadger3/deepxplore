@@ -1,0 +1,6 @@
+nohup: ignoring input
+2017-12-09 03:38:09.709429: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+Extracting /home/ubuntu/data/cs744_project_d3/MNIST_data/train-images-idx3-ubyte.gz
+Extracting /home/ubuntu/data/cs744_project_d3/MNIST_data/train-labels-idx1-ubyte.gz
+Extracting /home/ubuntu/data/cs744_project_d3/MNIST_data/t10k-images-idx3-ubyte.gz
+Extracting /home/ubuntu/data/cs744_project_d3/MNIST_data/t10k-labels-idx1-ubyte.gz
