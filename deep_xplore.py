@@ -147,7 +147,7 @@ def image_translate(gen_img,direction):
         [x_indices.append(i) for i in range(0,27)]
     if direction[1] == -1: #down
         y_indices = [27]
-        y_indices = [i for i in range(1,28)]
+        [y_indices.append(i) for i in range(0,27)]
     elif direction[1] == 0:
         y_indices = [i for i in range(0,28)]
     elif direction[1] == 1: #up
@@ -155,7 +155,7 @@ def image_translate(gen_img,direction):
         y_indices.append(0)
     gen_img = gen_img[x_indices,:]
     gen_img = gen_img[:,y_indices]
-    gen_img = gen_img.reshape((1,784))
+    gen_img = gen_img.reshape((-1,784))
     return gen_img
 
 
