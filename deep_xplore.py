@@ -134,6 +134,31 @@ def constrain_blur(gradients,step_size, gen_img):
     sigma = 0.3 + np.abs(mean_grads)*step_size
     new_img = gaussian_filter(gen_img,sigma)
     return new_img
+def image_translate(gen_img,direction):
+    gen_img = gen_img.reshape((28,28))
+    #direction (x,y) -1, 0, 1
+    if direction[0] == -1: #left
+        x_indices = [i for i in range(1,28)]
+        x_indices.append(0)
+    elif direction[0] == 0: #nada
+        x_indices = [i for i in range(0,28)]
+    elif direction[0] == 1: #right
+        x_indices = [27]
+        [x_indices.append(i) for i in range(0,27)]
+    if direction[1] == -1: #down
+        y_indices = [27]
+        y_indices = [i for i in range(1,28)]
+    elif direction[1] == 0:
+        y_indices = [i for i in range(0,28)]
+    elif direction[1] == 1: #up
+        y_indices = [i for i in range(1,28)]
+        y_indices.append(0)
+    gen_img = gen_img[x_indices,:]
+    gen_img = gen_img[:,y_indices]
+    gen_img = gen_img.reshape((1,784))
+    return gen_img
+
+
 
 
 
@@ -206,7 +231,8 @@ def main(_):
             #shared_label[(0,predictions[0])] = 1
             shared_label = predictions[0]
             #choose a random neuron from each network currently not covered
-
+            if transformation == 'translate':
+                direction = (np.random.randint(-1,1),np.random.randint(-1,1))
 
             #run gradient ascent for 20 steps
             for step in range(0,50):
@@ -218,7 +244,9 @@ def main(_):
                     gen_img,last_contrast,momentum = constrain_contrast(gradients,step_size,image_placeholder,orig_img,contrast_op,contrast_factor,last_contrast,momentum)
                 if transformation == 'blur':
                     gen_img = constrain_blur(gradients,step_size, gen_img)
-                if (transformation != 'contrast' and transformation != 'blur') or transformation == 'raw_gradient':
+                if transformation == 'translate':
+                    gen_img = image_translate(gen_img,direction)
+                if (transformation != 'contrast' and transformation != 'blur' and transformation != 'translate') or transformation == 'raw_gradient':
                     gen_img += gradients*step_size
                 if clipping == True:
                     gen_img = np.clip(gen_img,0,1)
